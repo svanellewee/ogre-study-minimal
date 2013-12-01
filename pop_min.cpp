@@ -56,17 +56,7 @@ public:
     bool mouseReleased(const OIS::MouseEvent& e, OIS::MouseButtonID id){ return true; }
 };
  
-#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
-    #define WIN32_LEAN_AND_MEAN
-    #include "windows.h"
-    INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT)
-#else
-    int main(int argc, char **argv)
-#endif
-{
-    Root* root = new Root;
- 
- 
+void setup_resources() {
     ConfigFile cf;
     cf.load("resources.cfg");
  
@@ -87,6 +77,20 @@ public:
         }
     }
 
+}
+
+#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include "windows.h"
+    INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT)
+#else
+    int main(int argc, char **argv)
+#endif
+{
+    Root* root = new Root;
+    
+    setup_resources();
+
     if(!root->showConfigDialog())
     {
         //Ogre
@@ -97,7 +101,9 @@ public:
     RenderWindow* window = root->initialise(true, "Simple Ogre App");
  
     ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
- 
+
+    // create scene happens around here...
+
     SceneManager* sceneMgr = root->createSceneManager(ST_GENERIC); 
     Camera* camera = sceneMgr->createCamera("SimpleCamera"); 
  
