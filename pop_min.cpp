@@ -56,7 +56,7 @@ public:
   bool mouseReleased(const OIS::MouseEvent& e, OIS::MouseButtonID id){ return true; }
 };
  
-void setup_resources() {
+void load_resource_config() {
   ConfigFile cf;
   cf.load("resources.cfg");
  
@@ -133,7 +133,7 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT)
 {
   Root* root = new Root("plugins.cfg");
     
-  setup_resources();  // -- 
+  load_resource_config();  // -- 
 
   RenderWindow* window = NULL;
   if(root->showConfigDialog()) {
@@ -151,17 +151,9 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT)
   // Look back along -Z
   camera->lookAt(Ogre::Vector3(0,0,-300));
   camera->setNearClipDistance(5);
-  
-  //  mCameraMan = new OgreBites::SdkCameraMan(mCamera);   // create a default camera controller
-
- 
+  Viewport* viewPort = window->addViewport(camera);
 
   ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
-
-  // create scene happens around here...
-
-
-  Viewport* viewPort = window->addViewport(camera);
 
   create_scene(sceneMgr);
  
