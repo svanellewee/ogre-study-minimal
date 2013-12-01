@@ -10,17 +10,15 @@ using namespace Ogre;
 class SimpleFrameListener : public FrameListener 
 { 
 public: 
-  SimpleFrameListener(OIS::Keyboard* keyboard, OIS::Mouse* mouse) 
+  SimpleFrameListener(OIS::Keyboard* keyboard) 
   { 
-    mKeyboard = keyboard; 
-    mMouse = mouse; 
+    mKeyboard = keyboard;
   } 
   // This gets called before the next frame is beeing rendered.
   bool frameStarted(const FrameEvent& evt) 
   {
     //update the input devices
     mKeyboard->capture();
-    mMouse->capture();
  
     //exit if key KC_ESCAPE pressed 
     if(mKeyboard->isKeyDown(OIS::KC_ESCAPE)) 
@@ -35,7 +33,6 @@ public:
   } 
 private: 
   OIS::Keyboard* mKeyboard; 
-  OIS::Mouse* mMouse; 
 }; 
  
 class SimpleKeyListener : public OIS::KeyListener 
@@ -45,16 +42,7 @@ public:
  
   bool keyReleased(const OIS::KeyEvent& e){ return true; }
 };
- 
-class SimpleMouseListener : public OIS::MouseListener
-{
-public: 
-  bool mouseMoved(const OIS::MouseEvent& e){ return true; }
- 
-  bool mousePressed(const OIS::MouseEvent& e, OIS::MouseButtonID id){ return true; }
- 
-  bool mouseReleased(const OIS::MouseEvent& e, OIS::MouseButtonID id){ return true; }
-};
+
  
 void load_resource_config() {
   ConfigFile cf;
@@ -123,6 +111,16 @@ void create_scene(SceneManager* mSceneMgr) {
   spotLight->setSpotlightRange(Degree(35), Degree(50));
 }
 
+Camera* setup_camera(SceneManager *sceneMgr) {
+  Camera* camera = sceneMgr->createCamera("SimpleCamera"); 
+  // Position it at 500 in Z direction
+  camera->setPosition(Ogre::Vector3(0,0,80));
+  // Look back along -Z
+  camera->lookAt(Ogre::Vector3(0,0,-300));
+  camera->setNearClipDistance(5);
+  return camera;
+}
+
 #if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
@@ -145,52 +143,36 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT)
   }
  
   SceneManager* sceneMgr = root->createSceneManager(ST_GENERIC); 
-  Camera* camera = sceneMgr->createCamera("SimpleCamera"); 
-  // Position it at 500 in Z direction
-  camera->setPosition(Ogre::Vector3(0,0,80));
-  // Look back along -Z
-  camera->lookAt(Ogre::Vector3(0,0,-300));
-  camera->setNearClipDistance(5);
+  Camera *camera = setup_camera(sceneMgr);
   Viewport* viewPort = window->addViewport(camera);
 
   ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
 
   create_scene(sceneMgr);
  
+  // setup input  (using OIS)
   OIS::ParamList pl;
   size_t windowHnd = 0;
-  std::ostringstream windowHndStr;
- 
+  std::ostringstream windowHndStr; 
   window->getCustomAttribute("WINDOW", &windowHnd);
   windowHndStr << windowHnd;
-  pl.insert(std::make_pair(std::string("WINDOW"), windowHndStr.str()));
- 
+  pl.insert(std::make_pair(std::string("WINDOW"), windowHndStr.str())); 
   OIS::InputManager* inputManager = OIS::InputManager::createInputSystem(pl);
-  OIS::Keyboard* keyboard = static_cast<OIS::Keyboard*>(inputManager->createInputObject(OIS::OISKeyboard, true));
-  OIS::Mouse*    mouse = static_cast<OIS::Mouse*>(inputManager->createInputObject(OIS::OISMouse, true));
- 
-  unsigned int width, height, depth;
-  int top, left;
-  window->getMetrics(width, height, depth, left, top);
-  const OIS::MouseState &ms = mouse->getMouseState();
-  ms.width = width;
-  ms.height = height;
- 
+  OIS::Keyboard* keyboard = static_cast<OIS::Keyboard*>(inputManager->createInputObject(OIS::OISKeyboard, true)); 
   SimpleKeyListener* keyListener = new SimpleKeyListener();
   keyboard->setEventCallback(keyListener);
-  SimpleMouseListener* mouseListener = new SimpleMouseListener();
-  mouse->setEventCallback(mouseListener);
-  SimpleFrameListener* frameListener = new SimpleFrameListener(keyboard, mouse);
-  root->addFrameListener(frameListener); 
- 
+
+  // update frame based on keyboard input
+  SimpleFrameListener* frameListener = new SimpleFrameListener(keyboard);
+  
+  root->addFrameListener(frameListener);  
   root->startRendering(); // blocks until a frame listener returns false. eg from pressing escape in this example
- 
-  inputManager->destroyInputObject(mouse); mouse = 0;
+
+
   inputManager->destroyInputObject(keyboard); keyboard = 0;
   OIS::InputManager::destroyInputSystem(inputManager); inputManager = 0;
 
   delete frameListener; 
-  delete mouseListener; 
   delete keyListener;
   //Ogre
   delete root;
