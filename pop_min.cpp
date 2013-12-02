@@ -4,22 +4,25 @@
 #include "Ogre.h" 
 #include "OgreFrameListener.h" 
 #include <OIS/OIS.h>
+#include <SdkCameraMan.h>
  
 using namespace Ogre; 
 
 class SimpleFrameListener : public FrameListener 
 { 
 public: 
-  SimpleFrameListener(OIS::Keyboard* keyboard) 
+  SimpleFrameListener(OIS::Keyboard* keyboard, OgreBites::SdkCameraMan *cam_man) 
   { 
     mKeyboard = keyboard;
+    camera_man = cam_man;
   } 
+
   // This gets called before the next frame is beeing rendered.
   bool frameStarted(const FrameEvent& evt) 
   {
     //update the input devices
     mKeyboard->capture();
- 
+    camera_man->frameRenderingQueued(evt);   // if dialog isn't up, then update the camera
     //exit if key KC_ESCAPE pressed 
     if(mKeyboard->isKeyDown(OIS::KC_ESCAPE)) 
       return false; 
@@ -33,14 +36,29 @@ public:
   } 
 private: 
   OIS::Keyboard* mKeyboard; 
+  OgreBites::SdkCameraMan *camera_man;
 }; 
  
 class SimpleKeyListener : public OIS::KeyListener 
 { 
 public: 
-  bool keyPressed(const OIS::KeyEvent& e){ return true; }
+  SimpleKeyListener(OgreBites::SdkCameraMan *cam_man) {
+    camera_man = cam_man;
+  }
+
+  bool keyPressed(const OIS::KeyEvent& arg){ 
+    
+    camera_man->injectKeyDown(arg);
+    return true; 
+  }
  
-  bool keyReleased(const OIS::KeyEvent& e){ return true; }
+  bool keyReleased(const OIS::KeyEvent& arg){ 
+    camera_man->injectKeyUp(arg);
+    return true; 
+  }
+
+  private:
+    OgreBites::SdkCameraMan *camera_man;
 };
 
  
@@ -77,6 +95,7 @@ void create_scene(SceneManager* mSceneMgr) {
 }
 
 Camera* setup_camera(SceneManager *sceneMgr) {
+
   Camera* camera = sceneMgr->createCamera("SimpleCamera"); 
   // Position it at 500 in Z direction
   camera->setPosition(Ogre::Vector3(0,0,80));
@@ -130,6 +149,9 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT)
   // 6. Create a scene using those resources.
   SceneManager* sceneMgr = root->createSceneManager(ST_GENERIC); 
   Camera *camera = setup_camera(sceneMgr);
+  OgreBites::SdkCameraMan* mCameraMan = new OgreBites::SdkCameraMan(camera);   // create a default camera controller
+
+
   Viewport* viewPort = window->addViewport(camera);
   create_scene(sceneMgr);
 
@@ -144,9 +166,9 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT)
   OIS::Keyboard* keyboard = static_cast<OIS::Keyboard*>(inputManager->createInputObject(OIS::OISKeyboard, true)); 
 
   // 8. Create any number of frame listeners.
-  SimpleKeyListener* keyListener = new SimpleKeyListener();
+  SimpleKeyListener* keyListener = new SimpleKeyListener(mCameraMan);
   keyboard->setEventCallback(keyListener);
-  SimpleFrameListener* frameListener = new SimpleFrameListener(keyboard);   // update frame based on keyboard input
+  SimpleFrameListener* frameListener = new SimpleFrameListener(keyboard, mCameraMan);   // update frame based on keyboard input
 
   // 9. Start the render loop.  
   root->addFrameListener(frameListener);  
