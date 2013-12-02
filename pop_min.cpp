@@ -60,55 +60,20 @@ void load_resource_config() {
         {
           typeName = i->first;
           archName = i->second;
-          ResourceGroupManager::getSingleton().addResourceLocation(
-                                                                   archName, typeName, secName);
+          ResourceGroupManager::getSingleton().addResourceLocation(archName,
+                                                                   typeName,
+                                                                   secName);
         }
     }
 
 }
 
 void create_scene(SceneManager* mSceneMgr) {
-  mSceneMgr->setAmbientLight(ColourValue(0,0,0));
+  mSceneMgr->setAmbientLight(ColourValue(0.9,0.9,0.9));
   mSceneMgr->setShadowTechnique(SHADOWTYPE_STENCIL_ADDITIVE);
   Entity* entOgreHead = mSceneMgr->createEntity("OgreHeadAgain", "ogrehead.mesh");
   entOgreHead->setCastShadows(true);
   mSceneMgr->getRootSceneNode()->createChildSceneNode()->attachObject(entOgreHead);
-  Plane plane(Vector3::UNIT_Y, 0);
-  MeshManager::getSingleton().createPlane("ground", ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-                                          plane, 1500, 1500, 20,20, true, 1, 5,5,Vector3::UNIT_Z);
-  Entity *entGround = mSceneMgr->createEntity("GroundEntity", "ground");
-  mSceneMgr->getRootSceneNode()->createChildSceneNode()->attachObject(entGround); /// you forgot this line!!!
-
-  entGround->setMaterialName("SurfaceX");
-  entGround->setCastShadows(false);
-
-
-  // ---
-  Light* pointLight = mSceneMgr->createLight("pointLight");
-  pointLight->setType(Light::LT_POINT);
-  pointLight->setPosition(Vector3(0, 150, 250));
-  
-  pointLight->setDiffuseColour(1.0, 0.0, 0.0);
-  pointLight->setSpecularColour(1.0, 0.0, 0.0);
-
-  // --
-  Light* directionalLight = mSceneMgr->createLight("directionalLight");
-  directionalLight->setType(Light::LT_DIRECTIONAL);
-  directionalLight->setDiffuseColour(ColourValue(.25, .25, 0));
-  directionalLight->setSpecularColour(ColourValue(.25, .25, 0));
-
-  directionalLight->setDirection(Vector3( 0, -1, 1 )); 
-  
-  // --
-  Light* spotLight = mSceneMgr->createLight("spotLight");
-  spotLight->setType(Light::LT_SPOTLIGHT);
-  spotLight->setDiffuseColour(0, 0, 1.0);
-  spotLight->setSpecularColour(0, 0, 1.0);
-
-  spotLight->setDirection(-1, -1, 0);
-  spotLight->setPosition(Vector3(300, 300, 0));
-
-  spotLight->setSpotlightRange(Degree(35), Degree(50));
 }
 
 Camera* setup_camera(SceneManager *sceneMgr) {
@@ -129,19 +94,21 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT)
   int main(int argc, char **argv)
 #endif
 {
-  Root* root = new Root("plugins.cfg");
+  Root* root = new Root();
     
   load_resource_config();  // -- 
 
-  RenderWindow* window = NULL;
-  if(root->showConfigDialog()) {
-    window = root->initialise(true, "Simple Ogre App");
-  } else {
-    //Ogre
-    delete root;
-    return false; // Exit the application on cancel
+  if (!root->restoreConfig()) {
+    root->showConfigDialog();
   }
- 
+
+  RenderWindow* window = NULL;
+  window = root->initialise(true, "Simple Ogre App");
+  if (!window) {
+    delete root;
+    return false;
+  }
+
   SceneManager* sceneMgr = root->createSceneManager(ST_GENERIC); 
   Camera *camera = setup_camera(sceneMgr);
   Viewport* viewPort = window->addViewport(camera);
