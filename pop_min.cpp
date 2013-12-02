@@ -94,14 +94,29 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT)
   int main(int argc, char **argv)
 #endif
 {
-  Root* root = new Root();
-    
-  load_resource_config();  // -- 
+  /** 
+      1. Create the Root object.
+      2. Define the resources that Ogre will use.
+      3. Choose and set up the RenderSystem (that is, DirectX, OpenGL, etc).
+      4. Create the RenderWindow (the window which Ogre resides in).
+      5. Initialise the resources that you are going to use.
+      6. Create a scene using those resources.
+      7. Set up any third party libraries and plugins.
+      8. Create any number of frame listeners.
+      9. Start the render loop.
+  */
 
+  // 1. Create the Root object.
+  Root* root = new Root();
+
+  // 2. Define the resources that Ogre will use.    
+  // 3. Choose and set up the RenderSystem (that is, DirectX, OpenGL, etc).
+  load_resource_config(); 
   if (!root->restoreConfig()) {
     root->showConfigDialog();
   }
 
+  // 4. Create the RenderWindow (the window which Ogre resides in).
   RenderWindow* window = NULL;
   window = root->initialise(true, "Simple Ogre App");
   if (!window) {
@@ -109,15 +124,16 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT)
     return false;
   }
 
+  // 5. Initialise the resources that you are going to use.
+  ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
+
+  // 6. Create a scene using those resources.
   SceneManager* sceneMgr = root->createSceneManager(ST_GENERIC); 
   Camera *camera = setup_camera(sceneMgr);
   Viewport* viewPort = window->addViewport(camera);
-
-  ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
-
   create_scene(sceneMgr);
- 
-  // setup input  (using OIS)
+
+  // 7. Set up any third party libraries and plugins. Like OIS...
   OIS::ParamList pl;
   size_t windowHnd = 0;
   std::ostringstream windowHndStr; 
@@ -126,16 +142,17 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR strCmdLine, INT)
   pl.insert(std::make_pair(std::string("WINDOW"), windowHndStr.str())); 
   OIS::InputManager* inputManager = OIS::InputManager::createInputSystem(pl);
   OIS::Keyboard* keyboard = static_cast<OIS::Keyboard*>(inputManager->createInputObject(OIS::OISKeyboard, true)); 
+
+  // 8. Create any number of frame listeners.
   SimpleKeyListener* keyListener = new SimpleKeyListener();
   keyboard->setEventCallback(keyListener);
+  SimpleFrameListener* frameListener = new SimpleFrameListener(keyboard);   // update frame based on keyboard input
 
-  // update frame based on keyboard input
-  SimpleFrameListener* frameListener = new SimpleFrameListener(keyboard);
-  
+  // 9. Start the render loop.  
   root->addFrameListener(frameListener);  
   root->startRendering(); // blocks until a frame listener returns false. eg from pressing escape in this example
 
-
+  // Cleanup !!!
   inputManager->destroyInputObject(keyboard); keyboard = 0;
   OIS::InputManager::destroyInputSystem(inputManager); inputManager = 0;
 
